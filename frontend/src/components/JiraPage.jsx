@@ -15,6 +15,8 @@ function JiraPage({ connection, onConnect }) {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIssues, setSelectedIssues] = useState([]);
+  const [ingesting, setIngesting] = useState(false);
 
   const handleConnect = async (e) => {
     e.preventDefault();
@@ -48,6 +50,7 @@ function JiraPage({ connection, onConnect }) {
     if (!connection) return;
     setLoading(true);
     setSelectedProject(projectKey);
+    setSelectedIssues([]);
     try {
       const response = await jiraAPI.listIssues(connection.connectionId, projectKey);
       setIssues(response.data.files);
@@ -73,6 +76,46 @@ function JiraPage({ connection, onConnect }) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleIssueSelection = (issueId) => {
+    setSelectedIssues(prev => 
+      prev.includes(issueId) 
+        ? prev.filter(id => id !== issueId)
+        : [...prev, issueId]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedIssues(issues.map(i => i.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedIssues([]);
+  };
+
+  const handleIngest = async () => {
+    if (selectedIssues.length === 0) {
+      alert('Please select at least one issue to ingest');
+      return;
+    }
+    
+    setIngesting(true);
+    setError(null);
+    try {
+      const response = await jiraAPI.ingest(connection.connectionId, selectedIssues);
+      const { data } = response;
+      
+      const successCount = data.progress.filter(p => p.status === 'completed').length;
+      const failCount = data.progress.filter(p => p.status === 'failed').length;
+      
+      alert(`Ingestion completed!\nSuccess: ${successCount}\nFailed: ${failCount}`);
+      clearSelection();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setIngesting(false);
     }
   };
 
@@ -184,6 +227,28 @@ function JiraPage({ connection, onConnect }) {
                 </button>
               </form>
 
+              {issues.length > 0 && (
+                <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button className="btn btn-sm btn-secondary" onClick={selectAll}>
+                    Select All ({issues.length})
+                  </button>
+                  {selectedIssues.length > 0 && (
+                    <>
+                      <button className="btn btn-sm btn-secondary" onClick={clearSelection}>
+                        Clear ({selectedIssues.length})
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={handleIngest}
+                        disabled={ingesting}
+                      >
+                        {ingesting ? <><div className="loading"></div> Ingesting...</> : `📥 Ingest ${selectedIssues.length} Issue(s)`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '24px' }}>
                   <div className="loading"></div>
@@ -192,8 +257,15 @@ function JiraPage({ connection, onConnect }) {
               ) : issues.length > 0 ? (
                 <div className="file-list">
                   {issues.map((issue) => (
-                    <div key={issue.id} className="file-item">
+                    <div key={issue.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => toggleIssueSelection(issue.id)}>
                       <div className="file-item-info">
+                        <input
+                          type="checkbox"
+                          checked={selectedIssues.includes(issue.id)}
+                          onChange={() => toggleIssueSelection(issue.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ marginRight: '12px', cursor: 'pointer' }}
+                        />
                         <div className="file-item-icon">🎫</div>
                         <div className="file-item-details">
                           <h4>{issue.name || issue.summary}</h4>
@@ -213,6 +285,8 @@ function JiraPage({ connection, onConnect }) {
                   <div className="empty-state-text">No issues found</div>
                 </div>
               )}
+              
+              {error && <div className="alert alert-error" style={{ marginTop: '16px' }}>{error}</div>}
             </div>
           )}
         </>

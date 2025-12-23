@@ -32,6 +32,13 @@ export const confluenceAPI = {
       query,
       space_key: spaceKey,
       limit
+    }),
+  
+  ingest: (connectionId, fileIds, metadata = {}) =>
+    apiClient.post('/confluence/ingest', {
+      connection_id: connectionId,
+      file_ids: fileIds,
+      metadata
     })
 };
 
@@ -63,6 +70,13 @@ export const gdriveAPI = {
       query,
       folder_path: folderPath,
       limit
+    }),
+  
+  ingest: (connectionId, fileIds, metadata = {}) =>
+    apiClient.post('/gdrive/ingest', {
+      connection_id: connectionId,
+      file_ids: fileIds,
+      metadata
     })
 };
 
@@ -93,6 +107,13 @@ export const jiraAPI = {
       query,
       project_key: projectKey,
       limit
+    }),
+  
+  ingest: (connectionId, fileIds, metadata = {}) =>
+    apiClient.post('/jira/ingest', {
+      connection_id: connectionId,
+      file_ids: fileIds,
+      metadata
     })
 };
 
@@ -129,6 +150,13 @@ export const sharepointAPI = {
       query,
       library_id: libraryId,
       limit
+    }),
+  
+  ingest: (connectionId, fileIds, metadata = {}) =>
+    apiClient.post('/sharepoint/ingest', {
+      connection_id: connectionId,
+      file_ids: fileIds,
+      metadata
     })
 };
 
@@ -159,6 +187,13 @@ export const localPdfAPI = {
       query,
       folder_path: folderPath,
       limit
+    }),
+  
+  ingest: (connectionId, fileIds, metadata = {}) =>
+    apiClient.post('/local-pdf/ingest', {
+      connection_id: connectionId,
+      file_ids: fileIds,
+      metadata
     })
 };
 

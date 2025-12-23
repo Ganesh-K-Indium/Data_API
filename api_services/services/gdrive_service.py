@@ -39,11 +39,13 @@ class GDriveService:
         try:
             parent_id = "root"
             if parent_folder_name != "root":
-                parent_id = self.client.find_folder_by_name(parent_folder_name)
-                if not parent_id:
+                # Fix: Use correct parameter name
+                found_id = self.client.find_folder_by_name(folder_name=parent_folder_name)
+                if not found_id:
                     raise ValueError(f"Folder not found: {parent_folder_name}")
+                parent_id = found_id
             
-            folders = self.client.list_folders(parent_id=parent_id)
+            folders = self.client.list_folders(parent_folder_id=parent_id)
             return folders
         
         except Exception as e:

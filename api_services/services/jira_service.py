@@ -30,15 +30,18 @@ class JiraService:
         """List all accessible JIRA projects"""
         try:
             projects = self.jira.projects()
-            return [
-                JiraProject(
-                    key=p.key,
-                    name=p.name,
-                    id=p.id,
-                    project_type=getattr(p, 'projectTypeKey', None)
-                )
-                for p in projects
-            ]
+            result = []
+            for p in projects:
+                result.append(JiraProject(
+                    key=str(p.key),
+                    name=str(p.name),
+                    id=str(p.id),
+                    project_type=str(getattr(p, 'projectTypeKey', 'unknown'))
+                ))
+            return result
+        except AttributeError as e:
+            # Handle missing jira_client
+            raise Exception(f"JIRA client not properly initialized: {str(e)}")
         except Exception as e:
             raise Exception(f"Failed to list projects: {str(e)}")
     

@@ -17,6 +17,8 @@ function SharePointPage({ connection, onConnect }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [ingesting, setIngesting] = useState(false);
 
   const handleConnect = async (e) => {
     e.preventDefault();
@@ -64,6 +66,7 @@ function SharePointPage({ connection, onConnect }) {
     if (!connection) return;
     setLoading(true);
     setSelectedLibrary(libraryId);
+    setSelectedFiles([]);
     try {
       const response = await sharepointAPI.listFiles(connection.connectionId, libraryId);
       setFiles(response.data.files);
@@ -89,6 +92,46 @@ function SharePointPage({ connection, onConnect }) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFileSelection = (fileId) => {
+    setSelectedFiles(prev => 
+      prev.includes(fileId) 
+        ? prev.filter(id => id !== fileId)
+        : [...prev, fileId]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedFiles(files.map(f => f.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedFiles([]);
+  };
+
+  const handleIngest = async () => {
+    if (selectedFiles.length === 0) {
+      alert('Please select at least one file to ingest');
+      return;
+    }
+    
+    setIngesting(true);
+    setError(null);
+    try {
+      const response = await sharepointAPI.ingest(connection.connectionId, selectedFiles);
+      const { data } = response;
+      
+      const successCount = data.progress.filter(p => p.status === 'completed').length;
+      const failCount = data.progress.filter(p => p.status === 'failed').length;
+      
+      alert(`Ingestion completed!\nSuccess: ${successCount}\nFailed: ${failCount}`);
+      clearSelection();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setIngesting(false);
     }
   };
 
@@ -221,6 +264,28 @@ function SharePointPage({ connection, onConnect }) {
                 </button>
               </form>
 
+              {files.length > 0 && (
+                <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button className="btn btn-sm btn-secondary" onClick={selectAll}>
+                    Select All ({files.length})
+                  </button>
+                  {selectedFiles.length > 0 && (
+                    <>
+                      <button className="btn btn-sm btn-secondary" onClick={clearSelection}>
+                        Clear ({selectedFiles.length})
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={handleIngest}
+                        disabled={ingesting}
+                      >
+                        {ingesting ? <><div className="loading"></div> Ingesting...</> : `📥 Ingest ${selectedFiles.length} File(s)`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '24px' }}>
                   <div className="loading"></div>
@@ -229,8 +294,15 @@ function SharePointPage({ connection, onConnect }) {
               ) : files.length > 0 ? (
                 <div className="file-list">
                   {files.map((file) => (
-                    <div key={file.id} className="file-item">
+                    <div key={file.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => toggleFileSelection(file.id)}>
                       <div className="file-item-info">
+                        <input
+                          type="checkbox"
+                          checked={selectedFiles.includes(file.id)}
+                          onChange={() => toggleFileSelection(file.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ marginRight: '12px', cursor: 'pointer' }}
+                        />
                         <div className="file-item-icon">
                           {file.name?.endsWith('.pdf') ? '📕' :
                            file.name?.endsWith('.docx') ? '📘' :
@@ -240,7 +312,7 @@ function SharePointPage({ connection, onConnect }) {
                           <h4>{file.name}</h4>
                           <p>
                             {file.size && `Size: ${(file.size / 1024).toFixed(2)} KB`}
-                            {file.modified && ` • Modified: ${file.modified}`}
+                            {file.modified_date && ` • Modified: ${file.modified_date}`}
                           </p>
                         </div>
                       </div>
@@ -256,6 +328,8 @@ function SharePointPage({ connection, onConnect }) {
                   <div className="empty-state-text">No files found</div>
                 </div>
               )}
+              
+              {error && <div className="alert alert-error" style={{ marginTop: '16px' }}>{error}</div>}
             </div>
           )}
         </>

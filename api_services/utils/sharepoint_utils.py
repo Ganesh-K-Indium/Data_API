@@ -693,7 +693,20 @@ class SharePointUtils:
     
     def list_sites(self) -> List[Dict[str, Any]]:
         """List all SharePoint sites"""
-        return self.client.list_sites()
+        try:
+            return self.client.list_sites()
+        except Exception as e:
+            # Return empty list with error info if list_sites fails
+            print(f"Warning: Failed to list SharePoint sites: {str(e)}")
+            # Return current site as a fallback
+            if self.site_url:
+                return [{
+                    "name": "Current Site",
+                    "url": self.site_url,
+                    "id": "default",
+                    "description": "Default configured site"
+                }]
+            return []
     
     def list_document_libraries(self, site_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """List document libraries in a site"""

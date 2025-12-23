@@ -15,6 +15,8 @@ function ConfluencePage({ connection, onConnect }) {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPages, setSelectedPages] = useState([]);
+  const [ingesting, setIngesting] = useState(false);
 
   const handleConnect = async (e) => {
     e.preventDefault();
@@ -48,6 +50,7 @@ function ConfluencePage({ connection, onConnect }) {
     if (!connection) return;
     setLoading(true);
     setSelectedSpace(spaceKey);
+    setSelectedPages([]);
     try {
       const response = await confluenceAPI.listPages(connection.connectionId, spaceKey);
       setPages(response.data.files);
@@ -73,6 +76,46 @@ function ConfluencePage({ connection, onConnect }) {
       setError(err.response?.data?.detail || err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const togglePageSelection = (pageId) => {
+    setSelectedPages(prev => 
+      prev.includes(pageId) 
+        ? prev.filter(id => id !== pageId)
+        : [...prev, pageId]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedPages(pages.map(p => p.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedPages([]);
+  };
+
+  const handleIngest = async () => {
+    if (selectedPages.length === 0) {
+      alert('Please select at least one page to ingest');
+      return;
+    }
+    
+    setIngesting(true);
+    setError(null);
+    try {
+      const response = await confluenceAPI.ingest(connection.connectionId, selectedPages);
+      const { data } = response;
+      
+      const successCount = data.progress.filter(p => p.status === 'completed').length;
+      const failCount = data.progress.filter(p => p.status === 'failed').length;
+      
+      alert(`Ingestion completed!\nSuccess: ${successCount}\nFailed: ${failCount}`);
+      clearSelection();
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message);
+    } finally {
+      setIngesting(false);
     }
   };
 
@@ -184,6 +227,28 @@ function ConfluencePage({ connection, onConnect }) {
                 </button>
               </form>
 
+              {pages.length > 0 && (
+                <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button className="btn btn-sm btn-secondary" onClick={selectAll}>
+                    Select All ({pages.length})
+                  </button>
+                  {selectedPages.length > 0 && (
+                    <>
+                      <button className="btn btn-sm btn-secondary" onClick={clearSelection}>
+                        Clear ({selectedPages.length})
+                      </button>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={handleIngest}
+                        disabled={ingesting}
+                      >
+                        {ingesting ? <><div className="loading"></div> Ingesting...</> : `📥 Ingest ${selectedPages.length} Page(s)`}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '24px' }}>
                   <div className="loading"></div>
@@ -192,8 +257,15 @@ function ConfluencePage({ connection, onConnect }) {
               ) : pages.length > 0 ? (
                 <div className="file-list">
                   {pages.map((page) => (
-                    <div key={page.id} className="file-item">
+                    <div key={page.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => togglePageSelection(page.id)}>
                       <div className="file-item-info">
+                        <input
+                          type="checkbox"
+                          checked={selectedPages.includes(page.id)}
+                          onChange={() => togglePageSelection(page.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ marginRight: '12px', cursor: 'pointer' }}
+                        />
                         <div className="file-item-icon">📄</div>
                         <div className="file-item-details">
                           <h4>{page.name || page.title}</h4>
@@ -212,6 +284,8 @@ function ConfluencePage({ connection, onConnect }) {
                   <div className="empty-state-text">No pages found</div>
                 </div>
               )}
+              
+              {error && <div className="alert alert-error" style={{ marginTop: '16px' }}>{error}</div>}
             </div>
           )}
         </>

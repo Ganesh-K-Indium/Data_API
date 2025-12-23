@@ -12,10 +12,13 @@ try:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from ..config import get_connection_manager
     from ..services.local_pdf_service import LocalPDFService
+    from ..services.vector_store_service import get_vector_store_service
 except ImportError:
     from models import (
         ConnectionRequest,
@@ -24,10 +27,13 @@ except ImportError:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from config import get_connection_manager
     from services.local_pdf_service import LocalPDFService
+    from services.vector_store_service import get_vector_store_service
 
 router = APIRouter(prefix="/local-pdf", tags=["Local PDF"])
 
@@ -132,3 +138,37 @@ async def search_files(request: SearchRequest):
     
     except Exception as e:
         raise HTTPException(500, f"Search failed: {str(e)}")
+
+
+@router.post("/ingest", response_model=IngestionResponse)
+async def ingest_pdfs(request: IngestionRequest):
+    """
+    Ingest selected PDF files into vector database
+    """
+    try:
+        # Set source type for this endpoint
+        request.source_type = DataSourceType.LOCAL_PDF
+        
+        # Validate connection
+        conn_manager = get_connection_manager()
+        client = conn_manager.get_client(request.connection_id)
+        
+        # Create ingestion job
+        vector_service = get_vector_store_service()
+        response = vector_service.create_ingestion_job(request)
+        
+        # Process ingestion immediately
+        vector_service.process_ingestion(
+            response.job_id,
+            client,
+            DataSourceType.LOCAL_PDF
+        )
+        
+        # Get updated status
+        status = vector_service.get_job_status(response.job_id)
+        response.progress = status.progress
+        
+        return response
+    
+    except Exception as e:
+        raise HTTPException(500, f"Failed to ingest PDFs: {str(e)}")

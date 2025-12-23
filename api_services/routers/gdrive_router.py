@@ -12,10 +12,13 @@ try:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from ..config import get_connection_manager
     from ..services.gdrive_service import GDriveService
+    from ..services.vector_store_service import get_vector_store_service
 except ImportError:
     from models import (
         ConnectionRequest,
@@ -24,10 +27,13 @@ except ImportError:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from config import get_connection_manager
     from services.gdrive_service import GDriveService
+    from services.vector_store_service import get_vector_store_service
 
 router = APIRouter(prefix="/gdrive", tags=["Google Drive"])
 
@@ -159,3 +165,37 @@ async def get_file_metadata(
     
     except Exception as e:
         raise HTTPException(500, f"Failed to get file metadata: {str(e)}")
+
+
+@router.post("/ingest", response_model=IngestionResponse)
+async def ingest_files(request: IngestionRequest):
+    """
+    Ingest selected Google Drive files into vector database
+    """
+    try:
+        # Set source type for this endpoint
+        request.source_type = DataSourceType.GDRIVE
+        
+        # Validate connection
+        conn_manager = get_connection_manager()
+        client = conn_manager.get_client(request.connection_id)
+        
+        # Create ingestion job
+        vector_service = get_vector_store_service()
+        response = vector_service.create_ingestion_job(request)
+        
+        # Process ingestion immediately
+        vector_service.process_ingestion(
+            response.job_id,
+            client,
+            DataSourceType.GDRIVE
+        )
+        
+        # Get updated status
+        status = vector_service.get_job_status(response.job_id)
+        response.progress = status.progress
+        
+        return response
+    
+    except Exception as e:
+        raise HTTPException(500, f"Failed to ingest files: {str(e)}")

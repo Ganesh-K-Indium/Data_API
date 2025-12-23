@@ -12,10 +12,13 @@ try:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from ..config import get_connection_manager
     from ..services.confluence_service import ConfluenceService
+    from ..services.vector_store_service import get_vector_store_service
 except ImportError:
     from models import (
         ConnectionRequest,
@@ -24,10 +27,13 @@ except ImportError:
         ListFilesResponse,
         SearchRequest,
         SearchResponse,
-        DataSourceType
+        DataSourceType,
+        IngestionRequest,
+        IngestionResponse
     )
     from config import get_connection_manager
     from services.confluence_service import ConfluenceService
+    from services.vector_store_service import get_vector_store_service
 
 router = APIRouter(prefix="/confluence", tags=["Confluence"])
 
@@ -181,6 +187,40 @@ async def get_page_content(
     
     except Exception as e:
         raise HTTPException(500, f"Failed to get page content: {str(e)}")
+
+
+@router.post("/ingest", response_model=IngestionResponse)
+async def ingest_pages(request: IngestionRequest):
+    """
+    Ingest selected Confluence pages into vector database
+    """
+    try:
+        # Set source type for this endpoint
+        request.source_type = DataSourceType.CONFLUENCE
+        
+        # Validate connection
+        conn_manager = get_connection_manager()
+        client = conn_manager.get_client(request.connection_id)
+        
+        # Create ingestion job
+        vector_service = get_vector_store_service()
+        response = vector_service.create_ingestion_job(request)
+        
+        # Process ingestion immediately (synchronous for now)
+        vector_service.process_ingestion(
+            response.job_id,
+            client,
+            DataSourceType.CONFLUENCE
+        )
+        
+        # Get updated status
+        status = vector_service.get_job_status(response.job_id)
+        response.progress = status.progress
+        
+        return response
+    
+    except Exception as e:
+        raise HTTPException(500, f"Failed to ingest pages: {str(e)}")
 
 
 @router.get("/pages/{page_id}/children")
