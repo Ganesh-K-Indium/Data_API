@@ -1,0 +1,49 @@
+{
+  "sources": [
+    {
+      "source_type": "confluence",
+      "enabled": false,
+      "config": {
+        "url": "https://your-domain.atlassian.net",
+        "username": "your-email@example.com",
+        "api_token": "your_api_token",
+        "cloud": true
+      }
+    },
+    {
+      "source_type": "gdrive",
+      "enabled": false,
+      "config": {
+        "service_account_json": "/path/to/service-account.json",
+        "credentials_type": "file_path"
+      }
+    },
+    {
+      "source_type": "jira",
+      "enabled": false,
+      "config": {
+        "url": "https://your-domain.atlassian.net",
+        "username": "your-email@example.com",
+        "api_token": "your_api_token",
+        "cloud": true
+      }
+    },
+    {
+      "source_type": "local_pdf",
+      "enabled": false,
+      "config": {
+        "base_directory": "./10k_PDFs"
+      }
+    },
+    {
+      "source_type": "sharepoint",
+      "enabled": false,
+      "config": {
+        "site_url": "https://yourdomain.sharepoint.com/sites/yoursite",
+        "client_id": "your_client_id",
+        "client_secret": "your_client_secret",
+        "tenant_id": "your_tenant_id"
+      }
+    }
+  ]
+}
