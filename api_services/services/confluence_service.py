@@ -95,19 +95,30 @@ class ConfluenceService:
             
             files = []
             for page in results.get('results', []):
+                page_id = str(page.get('id', ''))
+                page_title = page.get('title', 'Untitled')
+                space_key = page.get('space', {}).get('key', '')
+                
+                # Try to get page size from body content if available
+                page_size = None
+                if page.get('body', {}).get('storage', {}).get('value'):
+                    page_size = len(page.get('body', {}).get('storage', {}).get('value', ''))
+                
                 files.append(FileInfo(
-                    id=page.get('id', ''),
-                    name=page.get('title', ''),
+                    id=page_id,
+                    name=page_title,
                     type='page',
-                    path=f"{page.get('space', {}).get('key', '')}/{page.get('title', '')}",
+                    size=page_size,
+                    path=f"{space_key}/{page_title}",
                     url=page.get('_links', {}).get('webui', ''),
                     created_date=page.get('history', {}).get('createdDate', ''),
                     modified_date=page.get('version', {}).get('when', ''),
                     metadata={
-                        'space_key': page.get('space', {}).get('key', ''),
+                        'space_key': space_key,
                         'space_name': page.get('space', {}).get('name', ''),
                         'version': page.get('version', {}).get('number', 1),
-                        'content_type': 'page'
+                        'status': page.get('status', 'current'),
+                        'content_type': 'confluence_page'
                     }
                 ))
             

@@ -27,6 +27,11 @@ function SharePointPage({ connection, onConnect }) {
     try {
       const response = await sharepointAPI.connect(config);
       onConnect(response.data.connection_id, response.data.metadata);
+      
+      // Auto-load sites after connection
+      const sitesResponse = await sharepointAPI.listSites(response.data.connection_id);
+      setSites(sitesResponse.data.sites);
+      
       alert('Successfully connected to SharePoint!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message);

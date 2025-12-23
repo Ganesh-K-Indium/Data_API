@@ -25,6 +25,11 @@ function ConfluencePage({ connection, onConnect }) {
     try {
       const response = await confluenceAPI.connect(config);
       onConnect(response.data.connection_id, response.data.metadata);
+      
+      // Auto-load spaces after connection
+      const spacesResponse = await confluenceAPI.listSpaces(response.data.connection_id);
+      setSpaces(spacesResponse.data.spaces);
+      
       alert('Successfully connected to Confluence!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message);

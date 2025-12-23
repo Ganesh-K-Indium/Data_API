@@ -23,6 +23,15 @@ function GDrivePage({ connection, onConnect }) {
     try {
       const response = await gdriveAPI.connect(config);
       onConnect(response.data.connection_id, response.data.metadata);
+      
+      // Auto-load root files after connection
+      const filesResponse = await gdriveAPI.listFiles(response.data.connection_id, 'root');
+      setFiles(filesResponse.data.files);
+      
+      // Also load folders
+      const foldersResponse = await gdriveAPI.listFolders(response.data.connection_id, 'root');
+      setFolders(foldersResponse.data.folders);
+      
       alert('Successfully connected to Google Drive!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message);

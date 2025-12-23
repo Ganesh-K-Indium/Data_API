@@ -22,6 +22,15 @@ function LocalPdfPage({ connection, onConnect }) {
     try {
       const response = await localPdfAPI.connect(config);
       onConnect(response.data.connection_id, response.data.metadata);
+      
+      // Auto-load PDF files after connection
+      const filesResponse = await localPdfAPI.listFiles(response.data.connection_id, null);
+      setFiles(filesResponse.data.files);
+      
+      // Also load directories
+      const dirsResponse = await localPdfAPI.listDirectories(response.data.connection_id, null);
+      setDirectories(dirsResponse.data.directories);
+      
       alert('Successfully connected to local PDF directory!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message);

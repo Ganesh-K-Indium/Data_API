@@ -25,6 +25,11 @@ function JiraPage({ connection, onConnect }) {
     try {
       const response = await jiraAPI.connect(config);
       onConnect(response.data.connection_id, response.data.metadata);
+      
+      // Auto-load projects after connection
+      const projectsResponse = await jiraAPI.listProjects(response.data.connection_id);
+      setProjects(projectsResponse.data.projects);
+      
       alert('Successfully connected to JIRA!');
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
