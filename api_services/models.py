@@ -98,7 +98,7 @@ class FileInfo(BaseModel):
 
 class ListFilesRequest(BaseModel):
     """Request to list files from a data source"""
-    source_type: DataSourceType
+    source_type: Optional[DataSourceType] = None
     connection_id: str
     folder_path: Optional[str] = None
     space_key: Optional[str] = None  # For Confluence
@@ -120,7 +120,7 @@ class ListFilesResponse(BaseModel):
 # ========== Selection Models ==========
 class FileSelectionRequest(BaseModel):
     """Request to select specific files for ingestion"""
-    source_type: DataSourceType
+    source_type: Optional[DataSourceType] = None
     connection_id: str
     file_ids: List[str] = Field(..., description="List of file IDs to select")
 
@@ -135,7 +135,7 @@ class FileSelectionResponse(BaseModel):
 # ========== Ingestion Models ==========
 class IngestionRequest(BaseModel):
     """Request to ingest selected files into vector database"""
-    source_type: DataSourceType
+    source_type: Optional[DataSourceType] = None
     connection_id: str
     file_ids: List[str] = Field(..., description="List of file IDs to ingest")
     collection_name: Optional[str] = Field(None, description="Vector DB collection name")
@@ -177,7 +177,7 @@ class IngestionStatus(BaseModel):
 # ========== Search/Query Models ==========
 class SearchRequest(BaseModel):
     """Search/filter request for data source"""
-    source_type: DataSourceType
+    source_type: Optional[DataSourceType] = None
     connection_id: str
     query: str = Field(..., description="Search query")
     filters: Optional[Dict[str, Any]] = Field(None, description="Additional filters")

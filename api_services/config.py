@@ -81,7 +81,7 @@ class ConnectionManager:
     def _initialize_client(self, source_type: DataSourceType, config: Dict[str, Any]):
         """Initialize the appropriate client based on source type"""
         if source_type == DataSourceType.CONFLUENCE:
-            from confluence_mcp.utils import ConfluenceUtils
+            from utils import ConfluenceUtils
             # Set environment variables for ConfluenceUtils
             os.environ['CONFLUENCE_URL'] = config['url']
             os.environ['CONFLUENCE_USERNAME'] = config['username']
@@ -91,7 +91,7 @@ class ConnectionManager:
             return ConfluenceUtils()
         
         elif source_type == DataSourceType.GDRIVE:
-            from gdrive.utils import GoogleDriveClient
+            from utils import GoogleDriveClient
             # Handle service account JSON
             if config.get('credentials_type') == 'file_path':
                 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = config['service_account_json']
@@ -104,7 +104,7 @@ class ConnectionManager:
             return GoogleDriveClient()
         
         elif source_type == DataSourceType.JIRA:
-            from jira_mcp.utils import JiraUtils
+            from utils import JiraUtils
             os.environ['JIRA_URL'] = config['url']
             os.environ['JIRA_USERNAME'] = config['username']
             os.environ['JIRA_API_TOKEN'] = config['api_token']
@@ -113,7 +113,7 @@ class ConnectionManager:
             return JiraUtils()
         
         elif source_type == DataSourceType.SHAREPOINT:
-            from sharepoint.utils import SharePointUtils
+            from utils import SharePointUtils
             os.environ['SHAREPOINT_SITE_URL'] = config['site_url']
             os.environ['SHAREPOINT_CLIENT_ID'] = config['client_id']
             os.environ['SHAREPOINT_CLIENT_SECRET'] = config['client_secret']
@@ -121,7 +121,7 @@ class ConnectionManager:
             return SharePointUtils()
         
         elif source_type == DataSourceType.LOCAL_PDF:
-            from local_pdf.utils import LocalPDFUtils
+            from utils import LocalPDFUtils
             return LocalPDFUtils(base_directory=config.get('base_directory', './10k_PDFs'))
         
         else:
