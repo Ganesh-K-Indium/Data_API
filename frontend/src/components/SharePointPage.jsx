@@ -67,13 +67,13 @@ function SharePointPage({ connection, onConnect }) {
     }
   };
 
-  const loadFiles = async (libraryId) => {
+  const loadFiles = async (libraryName) => {
     if (!connection) return;
     setLoading(true);
-    setSelectedLibrary(libraryId);
+    setSelectedLibrary(libraryName);
     setSelectedFiles([]);
     try {
-      const response = await sharepointAPI.listFiles(connection.connectionId, libraryId);
+      const response = await sharepointAPI.listFiles(connection.connectionId, libraryName);
       setFiles(response.data.files);
     } catch (err) {
       setError(err.response?.data?.detail || err.message);
@@ -242,8 +242,8 @@ function SharePointPage({ connection, onConnect }) {
                   <div
                     key={idx}
                     className="card"
-                    style={{ cursor: 'pointer', border: selectedLibrary === library.id ? '2px solid var(--primary-color)' : undefined }}
-                    onClick={() => loadFiles(library.id)}
+                    style={{ cursor: 'pointer', border: selectedLibrary === library.name ? '2px solid var(--primary-color)' : undefined }}
+                    onClick={() => loadFiles(library.name)}
                   >
                     <div style={{ fontSize: '32px', marginBottom: '8px' }}>📚</div>
                     <h4 style={{ fontSize: '14px' }}>{library.name}</h4>

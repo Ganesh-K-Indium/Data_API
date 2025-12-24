@@ -135,20 +135,19 @@ export const sharepointAPI = {
       params: { connection_id: connectionId, site_id: siteId }
     }),
   
-  listFiles: (connectionId, libraryId = null, folderPath = null, limit = 50, offset = 0) =>
+  listFiles: (connectionId, libraryName = null, folderPath = null, limit = 50, offset = 0) =>
     apiClient.post('/sharepoint/list-files', {
       connection_id: connectionId,
-      library_id: libraryId,
-      folder_path: folderPath,
+      folder_path: libraryName || folderPath || 'Documents',
       limit,
       offset
     }),
   
-  searchFiles: (connectionId, query, libraryId = null, limit = 50) =>
+  searchFiles: (connectionId, query, libraryName = null, limit = 50) =>
     apiClient.post('/sharepoint/search', {
       connection_id: connectionId,
       query,
-      library_id: libraryId,
+      filters: libraryName ? { library_name: libraryName } : {},
       limit
     }),
   

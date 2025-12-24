@@ -710,7 +710,12 @@ class SharePointUtils:
     
     def list_document_libraries(self, site_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """List document libraries in a site"""
-        site_url = site_id if site_id else self.site_url
+        # Only use site_id if it's a valid URL (starts with http)
+        if site_id and site_id.startswith('http'):
+            site_url = site_id
+        else:
+            site_url = self.site_url
+        
         if not site_url:
             raise ValueError("site_url is required")
         return self.client.list_libraries(site_url)
