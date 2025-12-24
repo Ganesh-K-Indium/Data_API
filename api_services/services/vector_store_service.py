@@ -189,7 +189,13 @@ class VectorStoreService:
                     except Exception as cleanup_error:
                         print(f"  ⚠️  Failed to clean up temp file: {cleanup_error}")
             
-            job['progress'].append(progress_item.dict())
+            # Convert progress_item to dict (compatible with both Pydantic v1 and v2)
+            try:
+                progress_dict = progress_item.model_dump()
+            except AttributeError:
+                progress_dict = progress_item.dict()
+            
+            job['progress'].append(progress_dict)
         
         # Update job status
         job['status'] = 'completed' if job['failed_files'] == 0 else 'partial'

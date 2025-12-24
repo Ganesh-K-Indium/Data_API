@@ -348,8 +348,8 @@ async def ingest_files(request: IngestionRequest):
                 print(f"Has downloadUrl: {'downloadUrl' in parsed}")
                 if 'downloadUrl' not in parsed:
                     print(f"File data: {json.dumps(parsed, indent=2)}")
-            except:
-                print("Could not parse as JSON")
+            except Exception as parse_err:
+                print(f"Could not parse as JSON: {parse_err}")
         print(f"{'='*60}\n")
         
         # Set source type for this endpoint
@@ -362,6 +362,8 @@ async def ingest_files(request: IngestionRequest):
         vector_service = get_vector_store_service()
         response = vector_service.create_ingestion_job(request)
         
+        print(f"Ingestion job created: {response.job_id}")
+        
         # Process ingestion immediately
         vector_service.process_ingestion(
             response.job_id,
@@ -369,12 +371,19 @@ async def ingest_files(request: IngestionRequest):
             DataSourceType.SHAREPOINT
         )
         
+        print(f"Processing completed for job: {response.job_id}")
+        
         # Get updated status
         status = vector_service.get_job_status(response.job_id)
         response.progress = status.progress
+        
+        print(f"Returning response with {len(response.progress)} progress items")
         
         return response
     except HTTPException:
         raise
     except Exception as e:
+        print(f"ERROR in ingest_files: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(500, f"Failed to ingest files: {str(e)}")
