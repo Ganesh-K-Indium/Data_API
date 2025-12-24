@@ -118,9 +118,22 @@ class VectorStoreService:
         
         # Process each file
         for file_id in file_ids:
+            temp_file_path = None  # Track temp file for cleanup
+            
+            # Extract file name from JSON if possible
+            try:
+                import json
+                if isinstance(file_id, str) and file_id.startswith('{'):
+                    file_data = json.loads(file_id)
+                    display_name = file_data.get('name', file_id)
+                else:
+                    display_name = file_id
+            except:
+                display_name = file_id
+            
             progress_item = IngestionProgress(
                 file_id=file_id,
-                file_name=file_id,
+                file_name=display_name,
                 status='processing',
                 chunks_created=0
             )
@@ -151,12 +164,8 @@ class VectorStoreService:
                     
                     progress_item.status = 'completed'
                     progress_item.chunks_created = chunks_created
-                    progress_item.file_name = os.path.basename(temp_file_path)
+                    progress_item.file_name = display_name
                     job['completed_files'] += 1
-                    
-                    # Clean up temp file
-                    if os.path.exists(temp_file_path):
-                        os.remove(temp_file_path)
                 
                 else:
                     progress_item.status = 'failed'
@@ -167,7 +176,18 @@ class VectorStoreService:
                 progress_item.status = 'failed'
                 progress_item.error = str(e)
                 job['failed_files'] += 1
-                print(f"Error processing {file_id}: {e}")
+                print(f"Error processing {display_name}: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            finally:
+                # Always clean up temp file if it exists
+                if temp_file_path and os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                        print(f"  ✓ Cleaned up temp file: {temp_file_path}")
+                    except Exception as cleanup_error:
+                        print(f"  ⚠️  Failed to clean up temp file: {cleanup_error}")
             
             job['progress'].append(progress_item.dict())
         
@@ -224,13 +244,54 @@ class VectorStoreService:
             
             elif source_type == DataSourceType.SHAREPOINT:
                 # Download from SharePoint
-                temp_path = os.path.join(temp_dir, f"sharepoint_{uuid.uuid4().hex[:8]}.pdf")
+                # file_id is actually the file metadata JSON string passed from the ingestion request
+                import json
+                try:
+                    # Try to parse as JSON
+                    if isinstance(file_id, str) and (file_id.startswith('{') or file_id.startswith('{')):
+                        file_data = json.loads(file_id)
+                    else:
+                        file_data = {'id': file_id, 'name': file_id}
+                except json.JSONDecodeError as e:
+                    print(f"Failed to parse file_id as JSON: {e}")
+                    file_data = {'id': file_id, 'name': file_id}
                 
-                file_content = client.download_file(file_id)
-                with open(temp_path, 'wb') as f:
-                    f.write(file_content)
+                file_name = file_data.get('name', file_id)
                 
-                return temp_path if os.path.exists(temp_path) else None
+                # Check for downloadUrl in the file data or in metadata nested dict
+                download_url = file_data.get('downloadUrl', '')
+                if not download_url and 'metadata' in file_data:
+                    # Check if downloadUrl is nested in metadata
+                    metadata = file_data.get('metadata', {})
+                    if isinstance(metadata, dict):
+                        download_url = metadata.get('downloadUrl', '')
+                
+                print(f"SharePoint file download:")
+                print(f"  - File name: {file_name}")
+                print(f"  - Has downloadUrl: {bool(download_url)}")
+                
+                if not download_url:
+                    print(f"  ✗ No downloadUrl found for file {file_name}")
+                    print(f"  Available keys in file_data: {list(file_data.keys())}")
+                    if 'metadata' in file_data:
+                        print(f"  Available keys in metadata: {list(file_data['metadata'].keys()) if isinstance(file_data.get('metadata'), dict) else 'not a dict'}")
+                    return None
+                
+                # Preserve original extension
+                file_ext = os.path.splitext(file_name)[1] or '.pdf'
+                temp_path = os.path.join(temp_dir, f"sharepoint_{uuid.uuid4().hex[:8]}{file_ext}")
+                
+                print(f"  - Downloading to: {temp_path}")
+                
+                # Download using the download_url from SharePoint
+                success = client.client.download_file(download_url, temp_path)
+                
+                if success and os.path.exists(temp_path):
+                    print(f"  ✓ Downloaded successfully ({os.path.getsize(temp_path)} bytes)")
+                    return temp_path
+                else:
+                    print(f"  ✗ Download failed")
+                    return None
             
             return None
             

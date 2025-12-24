@@ -331,6 +331,27 @@ async def ingest_files(request: IngestionRequest):
     Works with connection_id or environment variables
     """
     try:
+        # Debug logging
+        print(f"\n{'='*60}")
+        print(f"SharePoint Ingestion Request Received")
+        print(f"{'='*60}")
+        print(f"Connection ID: {request.connection_id}")
+        print(f"Number of files: {len(request.file_ids)}")
+        print(f"First file_id type: {type(request.file_ids[0]) if request.file_ids else 'None'}")
+        if request.file_ids:
+            print(f"First file_id FULL: {str(request.file_ids[0])}")
+            # Try parsing it to see what keys are present
+            import json
+            try:
+                parsed = json.loads(request.file_ids[0])
+                print(f"Parsed keys: {list(parsed.keys())}")
+                print(f"Has downloadUrl: {'downloadUrl' in parsed}")
+                if 'downloadUrl' not in parsed:
+                    print(f"File data: {json.dumps(parsed, indent=2)}")
+            except:
+                print("Could not parse as JSON")
+        print(f"{'='*60}\n")
+        
         # Set source type for this endpoint
         request.source_type = DataSourceType.SHAREPOINT
         

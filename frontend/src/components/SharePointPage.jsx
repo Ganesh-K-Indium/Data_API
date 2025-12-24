@@ -100,16 +100,17 @@ function SharePointPage({ connection, onConnect }) {
     }
   };
 
-  const toggleFileSelection = (fileId) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) 
-        ? prev.filter(id => id !== fileId)
-        : [...prev, fileId]
-    );
+  const toggleFileSelection = (file) => {
+    setSelectedFiles(prev => {
+      const isSelected = prev.some(f => f.id === file.id);
+      return isSelected
+        ? prev.filter(f => f.id !== file.id)
+        : [...prev, file];
+    });
   };
 
   const selectAll = () => {
-    setSelectedFiles(files.map(f => f.id));
+    setSelectedFiles(files);
   };
 
   const clearSelection = () => {
@@ -125,7 +126,9 @@ function SharePointPage({ connection, onConnect }) {
     setIngesting(true);
     setError(null);
     try {
-      const response = await sharepointAPI.ingest(connection.connectionId, selectedFiles);
+      // Convert file objects to JSON strings to preserve all metadata including downloadUrl
+      const fileMetadata = selectedFiles.map(f => JSON.stringify(f));
+      const response = await sharepointAPI.ingest(connection.connectionId, fileMetadata);
       const { data } = response;
       
       const successCount = data.progress.filter(p => p.status === 'completed').length;
@@ -299,12 +302,12 @@ function SharePointPage({ connection, onConnect }) {
               ) : files.length > 0 ? (
                 <div className="file-list">
                   {files.map((file) => (
-                    <div key={file.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => toggleFileSelection(file.id)}>
+                    <div key={file.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => toggleFileSelection(file)}>
                       <div className="file-item-info">
                         <input
                           type="checkbox"
-                          checked={selectedFiles.includes(file.id)}
-                          onChange={() => toggleFileSelection(file.id)}
+                          checked={selectedFiles.some(f => f.id === file.id)}
+                          onChange={() => toggleFileSelection(file)}
                           onClick={(e) => e.stopPropagation()}
                           style={{ marginRight: '12px', cursor: 'pointer' }}
                         />

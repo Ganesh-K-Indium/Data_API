@@ -757,7 +757,8 @@ class SharePointUtils:
                 'created_date': file.get('modified', ''),
                 'path': folder_path or '',
                 'url': file.get('webUrl', ''),
-                'server_relative_url': file.get('webUrl', '')
+                'server_relative_url': file.get('webUrl', ''),
+                'downloadUrl': file.get('downloadUrl', '')
             }
             for file in files
         ]

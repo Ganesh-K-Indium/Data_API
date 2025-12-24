@@ -70,7 +70,8 @@ class SharePointService:
                     url=file_data.get('url', ''),
                     metadata={
                         'library': library_name,
-                        'server_relative_url': file_data.get('server_relative_url', '')
+                        'server_relative_url': file_data.get('server_relative_url', ''),
+                        'downloadUrl': file_data.get('downloadUrl', '')
                     }
                 ))
             
